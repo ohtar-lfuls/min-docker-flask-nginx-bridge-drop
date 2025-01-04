@@ -1,15 +1,18 @@
-from flask import Flask
+from flask import Flask, make_response
+from flask_restful import Resource, Api
 
 app = Flask(__name__)
+api = Api(app)
 
-@app.route('/AppCore/sayHello', methods=['GET'])
-def sayHello():
-    return f"sayHello: Hello!"
+class SayHello(Resource):
+    def get(self, name:str):
+        response = make_response(f'Hello! {name}')
+        response.headers["Content-Type"] = "text/plain; charset=utf-8"
+        return response
 
-@app.route('/AppCore/sayName/<name>', methods=['GET'])
-def sayName(name):
-    return f"sayName: Hello! {name}"
+api.add_resource(SayHello, '/AppCore/sayhello/<string:name>')
 
-if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=3000)
+
+
+
 
