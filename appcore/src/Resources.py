@@ -8,17 +8,18 @@ from .AppCore import AppCore
 app = Flask(__name__)
 api = Api(app)
 
-def add_resource(c):
+def add_resource(module_name:str, c):
     # /AppCore/ClassName/<string:name>
-    api.add_resource(c, f'/AppCore/{c.__name__}/<{c.type}:{c.arg}>')
+    api.add_resource(c, f'/{module_name}/{c.__name__}/<{c.type}:{c.arg}>')
 
+def add_resources(module):
+    classes = [cls for name, cls in inspect.getmembers(AppCore, inspect.isclass) if name != "__class__"]
 
-# AppCoreモジュール内のすべてのクラスをリスト化
-classes = [cls for name, cls in inspect.getmembers(AppCore, inspect.isclass) if name != "__class__"]
+    for cls in classes:
+        add_resource(module.__name__, cls)
 
-for cls in classes:
-    # print(cls.__name__)
-    add_resource(cls)
+add_resources(AppCore)
+
 
 
 
