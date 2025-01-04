@@ -1,7 +1,7 @@
 from flask_restful import Resource
 
-from .util.ResponseType import ResponseType
-from .util.AppCoreProtocol import AppCoreProtocol
+from util.ResponseType import ResponseType
+from util.AppCoreProtocol import AppCoreProtocol
 
 
 class SayHello(Resource, AppCoreProtocol):

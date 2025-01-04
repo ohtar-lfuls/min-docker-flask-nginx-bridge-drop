@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_restful import Api
 
-from .AppCore import *
+from AppCore import *
 
 app = Flask(__name__)
 api = Api(app)
