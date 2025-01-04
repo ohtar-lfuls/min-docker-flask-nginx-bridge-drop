@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from flask import Flask, make_response
 from flask_restful import Resource, Api
 
