@@ -1,7 +1,9 @@
 from flask import Flask
 from flask_restful import Api
 
-from AppCore import *
+import inspect
+
+from .AppCore import AppCore
 
 app = Flask(__name__)
 api = Api(app)
@@ -11,4 +13,12 @@ def add_resource(c):
     api.add_resource(c, f'/AppCore/{c.__name__}/<{c.type}:{c.arg}>')
 
 
-add_resource(SayHello)
+# AppCoreモジュール内のすべてのクラスをリスト化
+classes = [cls for name, cls in inspect.getmembers(AppCore, inspect.isclass) if name != "__class__"]
+
+for cls in classes:
+    # print(cls.__name__)
+    add_resource(cls)
+
+
+

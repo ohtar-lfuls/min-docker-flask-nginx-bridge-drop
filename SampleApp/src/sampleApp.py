@@ -13,6 +13,6 @@ class ApiWrapper:
 if __name__ == "__main__":
     app_core = ApiWrapper("http://localhost:8080", "AppCore")
     
-    print(app_core.get("SayHello", "MyName"))
+    print(app_core.get("Test", "MyName"))
 
 
