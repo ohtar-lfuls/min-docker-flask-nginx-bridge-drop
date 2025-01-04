@@ -1,18 +1,25 @@
-from flask import Flask, make_response
-from flask_restful import Resource, Api
+from flask_restful import Resource
 
-app = Flask(__name__)
-api = Api(app)
+from abc import ABC, abstractmethod
 
-class SayHello(Resource):
+from .util.ResponseType import ResponseType
+
+class AppCoreProtocol(ABC):
+    @property
+    @classmethod
+    @abstractmethod
+    def type(cls):
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def arg(cls):
+        pass
+
+
+class SayHello(Resource, AppCoreProtocol):
+    type = "string"
+    arg = "name"
     def get(self, name:str):
-        response = make_response(f'Hello! {name}')
-        response.headers["Content-Type"] = "text/plain; charset=utf-8"
-        return response
-
-api.add_resource(SayHello, '/AppCore/sayhello/<string:name>')
-
-
-
-
-
+        return ResponseType.text(f'Hello! {name}')
