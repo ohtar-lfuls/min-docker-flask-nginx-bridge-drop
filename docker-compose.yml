@@ -6,7 +6,7 @@ services:
     container_name: nginx
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
-      - ./public:/etc/nginx/html
+
     ports:
       - '8080:80'
     depends_on:
@@ -17,6 +17,8 @@ services:
   appcore:
     build: ./AppCore
     container_name: appcore
+    volumes:
+      - ./AppCore:/AppCore
     ports:
       - 3001:3000
     expose:
