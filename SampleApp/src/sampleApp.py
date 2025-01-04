@@ -1,11 +1,18 @@
 import requests
 
-url = 'http://localhost:8080/AppCore'
+class ApiWrapper:
+    def __init__(self, url, name):
+        self.module_name = name
+        self.url = url
+    
+    def get(self, func_name:str, arg:str):
+        return requests.get(f"{self.url}/{self.module_name}/{func_name}/{arg}").text
+        
 
-def sayHello(name:str) -> str:
-    response = requests.get(f"{url}/sayhello/{name}")
-    return response.text
 
 if __name__ == "__main__":
-    name = "MyName"
-    print(sayHello(name))
+    app_core = ApiWrapper("http://localhost:8080", "AppCore")
+    
+    print(app_core.get("SayHello", "MyName"))
+
+
