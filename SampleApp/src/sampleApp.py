@@ -2,13 +2,10 @@ import requests
 
 url = 'http://localhost:8080/AppCore'
 
-def sayHello():
-    return requests.get(f"{url}/sayHello").text
-
-def sayName(name):
-    return requests.get(f"{url}/sayName/{name}").text
+def sayHello(name:str) -> str:
+    response = requests.get(f"{url}/sayhello/{name}")
+    return response.text
 
 if __name__ == "__main__":
-
-    print(sayHello())
-    print(sayName("sampleApp"))
+    name = "MyName"
+    print(sayHello(name))
