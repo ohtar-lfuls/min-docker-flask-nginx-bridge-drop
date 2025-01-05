@@ -1,7 +1,13 @@
+# System Configuration Diagram
+
+<span style="display:block;text-align:center">![System Configuration Diagram](doc/System_configuration_diagram.png)
+
 # Environmental setup
 
 ## Install Docker
 See: [Install Docker Engine on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+
+
 
 ## Add User to docker group
 ```bash
@@ -20,17 +26,14 @@ docker run hello-world
 # Hello from Docker!
 ```
 
-## Access from external device on your network
-* [Windows](Scripts/win/README.md)
-
 # Run App
 ```bash
-docker compose up
+docker compose up --build
 ```
 
-## Preview index.html on your browser
-Open: http://localhost:8080
-
 ## Check flask api return
-Open http://localhost:3001 to execute index.
-Open http://localhost:3001/name to execute hello(name)
+Open [http://localhost:8080/AppCore/SayHello/\<string\>](http://localhost:8080/AppCore/SayHello/<string>) in your browser to execute sayhello
+
+
+## Access from external device on your network
+* [Windows](Scripts/win/README.md)
