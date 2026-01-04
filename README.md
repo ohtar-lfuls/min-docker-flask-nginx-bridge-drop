@@ -1,39 +1,42 @@
-# System Configuration Diagram
+# BridgeDrop
 
-<span style="display:block;text-align:center">![System Configuration Diagram](doc/System_configuration_diagram.png)
+AirDropが使えない環境でも、AirDropのように直感的にファイルを送れるファイル転送ツール。
 
-# Environmental setup
+**開発開始**: 2026/01/04(土)
 
-## Install Docker
-See: [Install Docker Engine on Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+## コンセプト
 
+- **全OS対応**: Windows、Mac、Linux、iOS、Android - ブラウザがあれば動作
+- **低スペックでも動作**: GPUは不要、メモリ消費も最小限
+- **PWA対応**: ホーム画面に追加すればネイティブアプリのように使用可能
+- **プライバシー保護**: ファイルは一定時間後に自動削除
 
+## 仕組み
 
-## Add User to docker group
-```bash
-cat /etc/group | grep docker
-# docker:x:***:
+1. **送信者**: ファイルを選択 → サーバーにアップロード
+2. **サーバー**: 一時的にファイルを保存し、ダウンロード用URLとQRコードを発行
+3. **受信者**: QRコードを読み取る（またはURLを開く） → ファイルをダウンロード
+4. **自動削除**: ファイルは一定時間後に自動で消滅
 
-sudo usermod -aG docker $USER
+## 必要環境
 
-cat /etc/group | grep docker
-# docker:x:***:<username>
-```
+- Docker
+- Docker Compose
 
-## Run docker without root permission
-```bash
-docker run hello-world
-# Hello from Docker!
-```
+## 起動方法
 
-# Run App
 ```bash
 docker compose up --build
 ```
 
-## Check flask api return
-Open [http://localhost:8080/AppCore/SayHello/\<string\>](http://localhost:8080/AppCore/SayHello/<string>) in your browser to execute sayhello
+起動後、ブラウザで http://localhost:8080 にアクセス
 
+## ベースプロジェクト
 
-## Access from external device on your network
-* [Windows](Scripts/win/README.md)
+[NULL62d3/min-docker-flask-nginx](https://github.com/NULL62d3/min-docker-flask-nginx)
+
+## システム構成
+
+Nginx + Flask (uWSGI) 構成
+
+![System Configuration Diagram](doc/System_configuration_diagram.png)

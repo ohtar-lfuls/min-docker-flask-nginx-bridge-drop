@@ -1,2 +1,11 @@
 # Python
 __pycache__/
+
+# Claude Code
+.claude/
+CLAUDE.md
+.claudeignore
+
+# Uploads (temporary files)
+appcore/uploads/*
+!appcore/uploads/.gitkeep
