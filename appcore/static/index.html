@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BridgeDrop</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container { max-width: 400px; width: 100%; }
+        h1 { color: white; text-align: center; margin-bottom: 10px; font-size: 2rem; }
+        .subtitle { color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 30px; font-size: 0.9rem; }
+        .card { background: white; border-radius: 16px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .upload-area { border: 3px dashed #ddd; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; margin-bottom: 20px; }
+        .upload-area:hover, .upload-area.dragover { border-color: #667eea; background: rgba(102,126,234,0.05); }
+        .upload-area svg { width: 48px; height: 48px; color: #999; margin-bottom: 15px; }
+        .upload-area p { color: #666; font-size: 1rem; }
+        .upload-area .hint { color: #999; font-size: 0.85rem; margin-top: 8px; }
+        #fileInput { display: none; }
+        .progress-container { display: none; margin-bottom: 20px; }
+        .progress-bar { height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 0%; transition: width 0.3s ease; }
+        .progress-text { text-align: center; margin-top: 8px; color: #666; font-size: 0.9rem; }
+        .result { display: none; text-align: center; padding: 20px; background: #f8f9fa; border-radius: 12px; }
+        .result.success { display: block; }
+        .result h3 { color: #28a745; margin-bottom: 15px; }
+        .result .filename { color: #333; font-weight: 500; margin-bottom: 15px; word-break: break-all; }
+        .download-link { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; margin-bottom: 15px; }
+        .download-link:hover { opacity: 0.9; }
+        .url-box { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 15px; word-break: break-all; font-size: 0.85rem; color: #666; }
+        .copy-btn { background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; margin-top: 10px; }
+        .reset-btn { background: none; border: none; color: #667eea; cursor: pointer; font-size: 0.9rem; margin-top: 20px; text-decoration: underline; }
+        .error { color: #dc3545; text-align: center; margin-top: 15px; display: none; }
+        .error.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>BridgeDrop</h1>
+        <p class="subtitle">AirDropのように、簡単にファイルを共有</p>
+        <div class="card">
+            <div class="upload-area" id="uploadArea">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+                <p>タップしてファイルを選択</p>
+                <p class="hint">またはここにドラッグ&ドロップ</p>
+            </div>
+            <input type="file" id="fileInput">
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <p class="progress-text" id="progressText">アップロード中...</p>
+            </div>
+            <div class="result" id="result">
+                <h3>アップロード完了!</h3>
+                <p class="filename" id="resultFilename"></p>
+                <a class="download-link" id="downloadLink" href="#">ダウンロード</a>
+                <div class="url-box" id="urlBox"></div>
+                <button class="copy-btn" id="copyBtn">URLをコピー</button><br>
+                <button class="reset-btn" id="resetBtn">別のファイルを送信</button>
+            </div>
+            <p class="error" id="errorMsg"></p>
+        </div>
+    </div>
+    <script>
+        const ua=document.getElementById('uploadArea'),fi=document.getElementById('fileInput'),pc=document.getElementById('progressContainer'),pf=document.getElementById('progressFill'),pt=document.getElementById('progressText'),rs=document.getElementById('result'),rf=document.getElementById('resultFilename'),dl=document.getElementById('downloadLink'),ub=document.getElementById('urlBox'),cb=document.getElementById('copyBtn'),rb=document.getElementById('resetBtn'),em=document.getElementById('errorMsg');
+        ua.onclick=()=>fi.click();
+        ua.ondragover=e=>{e.preventDefault();ua.classList.add('dragover');};
+        ua.ondragleave=()=>ua.classList.remove('dragover');
+        ua.ondrop=e=>{e.preventDefault();ua.classList.remove('dragover');if(e.dataTransfer.files.length)upload(e.dataTransfer.files[0]);};
+        fi.onchange=()=>{if(fi.files.length)upload(fi.files[0]);};
+        function upload(f){const fd=new FormData();fd.append('file',f);ua.style.display='none';pc.style.display='block';rs.classList.remove('success');em.classList.remove('show');const x=new XMLHttpRequest();x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);pf.style.width=p+'%';pt.textContent='アップロード中... '+p+'%';}};x.onload=()=>{pc.style.display='none';if(x.status===200){const r=JSON.parse(x.responseText);rf.textContent=r.filename;dl.href=r.download_url;ub.textContent=location.origin+r.download_url;rs.classList.add('success');}else{em.textContent='アップロードに失敗しました';em.classList.add('show');ua.style.display='block';}};x.onerror=()=>{pc.style.display='none';em.textContent='通信エラーが発生しました';em.classList.add('show');ua.style.display='block';};x.open('POST','/api/upload');x.send(fd);}
+        cb.onclick=()=>navigator.clipboard.writeText(ub.textContent).then(()=>{cb.textContent='コピーしました!';setTimeout(()=>cb.textContent='URLをコピー',2000);});
+        rb.onclick=()=>{rs.classList.remove('success');ua.style.display='block';fi.value='';pf.style.width='0%';};
+    </script>
+</body>
+</html>
