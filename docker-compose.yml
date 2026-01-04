@@ -1,12 +1,10 @@
-version: '3.5'
-
 services:
   nginx:
     image: nginx:latest
     container_name: nginx
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
-
+      - ./appcore/static:/AppCore/static
     ports:
       - '8080:80'
     depends_on:
@@ -15,10 +13,10 @@ services:
       - nginx_network
   
   appcore:
-    build: ./AppCore
+    build: ./appcore
     container_name: appcore
     volumes:
-      - ./AppCore:/AppCore
+      - ./appcore:/AppCore
     ports:
       - 3001:3000
     expose:
