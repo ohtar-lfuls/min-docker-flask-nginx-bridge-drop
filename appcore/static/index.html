@@ -1,8 +1,13 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
     <title>BridgeDrop</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -33,6 +38,9 @@
         .result.success { display: block; }
         .result h3 { color: #28a745; margin-bottom: 15px; }
         .result .filename { color: #333; font-weight: 500; margin-bottom: 15px; word-break: break-all; }
+        .qr-container { margin: 20px 0; }
+        .qr-container img { max-width: 200px; border-radius: 8px; }
+        .expiry-notice { color: #dc3545; font-size: 0.85rem; margin-bottom: 15px; }
         .download-link { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; margin-bottom: 15px; }
         .download-link:hover { opacity: 0.9; }
         .url-box { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 15px; word-break: break-all; font-size: 0.85rem; color: #666; }
@@ -60,6 +68,8 @@
             <div class="result" id="result">
                 <h3>アップロード完了!</h3>
                 <p class="filename" id="resultFilename"></p>
+                <div class="qr-container"><img id="qrCode" src="" alt="QR Code"></div>
+                <p class="expiry-notice" id="expiryNotice"></p>
                 <a class="download-link" id="downloadLink" href="#">ダウンロード</a>
                 <div class="url-box" id="urlBox"></div>
                 <button class="copy-btn" id="copyBtn">URLをコピー</button><br>
@@ -69,15 +79,15 @@
         </div>
     </div>
     <script>
-        const ua=document.getElementById('uploadArea'),fi=document.getElementById('fileInput'),pc=document.getElementById('progressContainer'),pf=document.getElementById('progressFill'),pt=document.getElementById('progressText'),rs=document.getElementById('result'),rf=document.getElementById('resultFilename'),dl=document.getElementById('downloadLink'),ub=document.getElementById('urlBox'),cb=document.getElementById('copyBtn'),rb=document.getElementById('resetBtn'),em=document.getElementById('errorMsg');
+        const ua=document.getElementById("uploadArea"),fi=document.getElementById("fileInput"),pc=document.getElementById("progressContainer"),pf=document.getElementById("progressFill"),pt=document.getElementById("progressText"),rs=document.getElementById("result"),rf=document.getElementById("resultFilename"),dl=document.getElementById("downloadLink"),ub=document.getElementById("urlBox"),cb=document.getElementById("copyBtn"),rb=document.getElementById("resetBtn"),em=document.getElementById("errorMsg"),qr=document.getElementById("qrCode"),en=document.getElementById("expiryNotice");
         ua.onclick=()=>fi.click();
-        ua.ondragover=e=>{e.preventDefault();ua.classList.add('dragover');};
-        ua.ondragleave=()=>ua.classList.remove('dragover');
-        ua.ondrop=e=>{e.preventDefault();ua.classList.remove('dragover');if(e.dataTransfer.files.length)upload(e.dataTransfer.files[0]);};
+        ua.ondragover=e=>{e.preventDefault();ua.classList.add("dragover");};
+        ua.ondragleave=()=>ua.classList.remove("dragover");
+        ua.ondrop=e=>{e.preventDefault();ua.classList.remove("dragover");if(e.dataTransfer.files.length)upload(e.dataTransfer.files[0]);};
         fi.onchange=()=>{if(fi.files.length)upload(fi.files[0]);};
-        function upload(f){const fd=new FormData();fd.append('file',f);ua.style.display='none';pc.style.display='block';rs.classList.remove('success');em.classList.remove('show');const x=new XMLHttpRequest();x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);pf.style.width=p+'%';pt.textContent='アップロード中... '+p+'%';}};x.onload=()=>{pc.style.display='none';if(x.status===200){const r=JSON.parse(x.responseText);rf.textContent=r.filename;dl.href=r.download_url;ub.textContent=location.origin+r.download_url;rs.classList.add('success');}else{em.textContent='アップロードに失敗しました';em.classList.add('show');ua.style.display='block';}};x.onerror=()=>{pc.style.display='none';em.textContent='通信エラーが発生しました';em.classList.add('show');ua.style.display='block';};x.open('POST','/api/upload');x.send(fd);}
-        cb.onclick=()=>navigator.clipboard.writeText(ub.textContent).then(()=>{cb.textContent='コピーしました!';setTimeout(()=>cb.textContent='URLをコピー',2000);});
-        rb.onclick=()=>{rs.classList.remove('success');ua.style.display='block';fi.value='';pf.style.width='0%';};
+        function upload(f){const fd=new FormData();fd.append("file",f);ua.style.display="none";pc.style.display="block";rs.classList.remove("success");em.classList.remove("show");const x=new XMLHttpRequest();x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);pf.style.width=p+"%";pt.textContent="アップロード中... "+p+"%";}};x.onload=()=>{pc.style.display="none";if(x.status===200){const r=JSON.parse(x.responseText);const fullUrl=location.origin+r.download_url;rf.textContent=r.filename;dl.href=r.download_url;ub.textContent=fullUrl;qr.src="/api/qrcode?url="+encodeURIComponent(fullUrl);const mins=Math.floor(r.expires_in/60);en.textContent="このリンクは"+mins+"分後に無効になります";rs.classList.add("success");}else{em.textContent="アップロードに失敗しました";em.classList.add("show");ua.style.display="block";}};x.onerror=()=>{pc.style.display="none";em.textContent="通信エラーが発生しました";em.classList.add("show");ua.style.display="block";};x.open("POST","/api/upload");x.send(fd);}
+        cb.onclick=()=>navigator.clipboard.writeText(ub.textContent).then(()=>{cb.textContent="コピーしました!";setTimeout(()=>cb.textContent="URLをコピー",2000);});
+        rb.onclick=()=>{rs.classList.remove("success");ua.style.display="block";fi.value="";pf.style.width="0%";};
     </script>
 </body>
 </html>

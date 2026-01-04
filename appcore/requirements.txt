@@ -1,3 +1,5 @@
 Flask==3.1.0
 Flask-RESTful==0.3.10
 uwsgi
+qrcode[pil]==7.4.2
+Pillow==10.2.0

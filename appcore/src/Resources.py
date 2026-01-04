@@ -1,10 +1,15 @@
-from flask import Flask, request, send_from_directory, jsonify
+from flask import Flask, request, send_from_directory, send_file, Response
 from flask_restful import Api, Resource
 from werkzeug.utils import secure_filename
 
 import inspect
 import os
 import uuid
+import time
+import threading
+import shutil
+import io
+import qrcode
 
 from .AppCore import AppCore
 
@@ -14,6 +19,32 @@ api = Api(app)
 # アップロード設定
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# ファイル有効期限（秒）
+FILE_EXPIRY_SECONDS = 600  # 10分
+
+
+def cleanup_old_files():
+    """古いファイルを削除するバックグラウンドタスク"""
+    while True:
+        try:
+            now = time.time()
+            for file_id in os.listdir(UPLOAD_FOLDER):
+                dir_path = os.path.join(UPLOAD_FOLDER, file_id)
+                if os.path.isdir(dir_path):
+                    # ディレクトリの作成時刻をチェック
+                    dir_mtime = os.path.getmtime(dir_path)
+                    if now - dir_mtime > FILE_EXPIRY_SECONDS:
+                        shutil.rmtree(dir_path)
+                        print(f"[Cleanup] Deleted expired file: {file_id}")
+        except Exception as e:
+            print(f"[Cleanup] Error: {e}")
+        time.sleep(60)  # 1分ごとにチェック
+
+
+# バックグラウンドでクリーンアップスレッドを起動
+cleanup_thread = threading.Thread(target=cleanup_old_files, daemon=True)
+cleanup_thread.start()
 
 
 class FileUpload(Resource):
@@ -46,7 +77,8 @@ class FileUpload(Resource):
             'success': True,
             'file_id': file_id,
             'filename': filename,
-            'download_url': download_url
+            'download_url': download_url,
+            'expires_in': FILE_EXPIRY_SECONDS
         }
 
 
@@ -57,11 +89,11 @@ class FileDownload(Resource):
         directory = os.path.join(UPLOAD_FOLDER, file_id)
 
         if not os.path.exists(directory):
-            return {'error': 'File not found'}, 404
+            return {'error': 'File not found or expired'}, 404
 
         file_path = os.path.join(directory, filename)
         if not os.path.exists(file_path):
-            return {'error': 'File not found'}, 404
+            return {'error': 'File not found or expired'}, 404
 
         return send_from_directory(
             directory,
@@ -71,9 +103,38 @@ class FileDownload(Resource):
         )
 
 
+class QRCodeGenerator(Resource):
+    """QRコード生成API"""
+
+    def get(self):
+        url = request.args.get('url')
+        if not url:
+            return {'error': 'URL parameter required'}, 400
+
+        # QRコード生成
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        # 画像をバイトストリームに変換
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+
+        return send_file(img_io, mimetype='image/png')
+
+
 # BridgeDrop API エンドポイント
 api.add_resource(FileUpload, '/api/upload')
 api.add_resource(FileDownload, '/api/download/<string:file_id>/<string:filename>')
+api.add_resource(QRCodeGenerator, '/api/qrcode')
 
 
 # 既存のAppCore自動登録（互換性維持）
