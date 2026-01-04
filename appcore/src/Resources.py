@@ -24,6 +24,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 FILE_EXPIRY_SECONDS = 600  # 10分
 
 
+def get_base_url():
+    """リクエストからベースURLを取得"""
+    # X-Forwarded-Host があればそれを使用（プロキシ経由）
+    host = request.headers.get('X-Forwarded-Host') or request.host
+    scheme = request.headers.get('X-Forwarded-Proto') or request.scheme
+    return f"{scheme}://{host}"
+
+
 def cleanup_old_files():
     """古いファイルを削除するバックグラウンドタスク"""
     while True:
@@ -32,14 +40,13 @@ def cleanup_old_files():
             for file_id in os.listdir(UPLOAD_FOLDER):
                 dir_path = os.path.join(UPLOAD_FOLDER, file_id)
                 if os.path.isdir(dir_path):
-                    # ディレクトリの作成時刻をチェック
                     dir_mtime = os.path.getmtime(dir_path)
                     if now - dir_mtime > FILE_EXPIRY_SECONDS:
                         shutil.rmtree(dir_path)
                         print(f"[Cleanup] Deleted expired file: {file_id}")
         except Exception as e:
             print(f"[Cleanup] Error: {e}")
-        time.sleep(60)  # 1分ごとにチェック
+        time.sleep(60)
 
 
 # バックグラウンドでクリーンアップスレッドを起動
@@ -71,13 +78,18 @@ class FileUpload(Resource):
         file.save(file_path)
 
         # ダウンロードURLを生成
-        download_url = f'/api/download/{file_id}/{filename}'
+        download_path = f'/api/download/{file_id}/{filename}'
+        
+        # ベースURLを取得して完全なURLを生成
+        base_url = get_base_url()
+        full_download_url = f'{base_url}{download_path}'
 
         return {
             'success': True,
             'file_id': file_id,
             'filename': filename,
-            'download_url': download_url,
+            'download_url': download_path,
+            'full_download_url': full_download_url,
             'expires_in': FILE_EXPIRY_SECONDS
         }
 
@@ -111,7 +123,6 @@ class QRCodeGenerator(Resource):
         if not url:
             return {'error': 'URL parameter required'}, 400
 
-        # QRコード生成
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -123,7 +134,6 @@ class QRCodeGenerator(Resource):
 
         img = qr.make_image(fill_color="black", back_color="white")
 
-        # 画像をバイトストリームに変換
         img_io = io.BytesIO()
         img.save(img_io, 'PNG')
         img_io.seek(0)
@@ -131,10 +141,21 @@ class QRCodeGenerator(Resource):
         return send_file(img_io, mimetype='image/png')
 
 
+class ServerInfo(Resource):
+    """サーバー情報API"""
+
+    def get(self):
+        return {
+            'base_url': get_base_url(),
+            'host': request.host
+        }
+
+
 # BridgeDrop API エンドポイント
 api.add_resource(FileUpload, '/api/upload')
 api.add_resource(FileDownload, '/api/download/<string:file_id>/<string:filename>')
 api.add_resource(QRCodeGenerator, '/api/qrcode')
+api.add_resource(ServerInfo, '/api/server-info')
 
 
 # 既存のAppCore自動登録（互換性維持）
